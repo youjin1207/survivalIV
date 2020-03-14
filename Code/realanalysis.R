@@ -1,6 +1,7 @@
 library(MASS)
 library(ranger)
 
+source("Code/core/binary_survival_para_colo.R")
 source("Code/core/binary_survival_ranger_colo.R")
 dat = read.table("Data/sample.csv", sep="," , header = TRUE)
 
@@ -48,16 +49,26 @@ x.miss.naive = data.frame(age = dat$age, sex = dat$sex,
                  A = dat$A)
 
 
+### parametric estimation
+if_estimator = binary_survival_para_if_colo(dat = dat, time.list = time.list)
 
-if_estimator = binary_survival_ranger_if_colo(dat = dat, x.trt = x.trt, x.out = x.out, 
+## discretize the observed failure times
+dat_2 = dat
+dat_2$obs.Y = trunc(dat$obs.Y/100)*100
+if_hazard_estimator = binary_survival_para_if_hazard(dat = dat_2, time.list = time.list)
+naive_estimator = binary_survival_para_naive(dat = dat_2, time.list = time.list)
+
+### nonparametric estimation
+ranger.if_estimator = binary_survival_ranger_if_colo(dat = dat, x.trt = x.trt, x.out = x.out, 
 x.miss = x.miss, x.instrument = x.instrument,
 time.list = time.list, nsplits = 2)
 
 ## discretize the observed failure times
 dat_2 = dat
 dat_2$obs.Y = trunc(dat$obs.Y/100)*100
-if_hazard_estimator = binary_survival_ranger_if_hazard_colo(dat = dat_2,  x.trt = x.trt, x.out = x.out, 
+ranger.if_hazard_estimator = binary_survival_ranger_if_hazard_colo(dat = dat_2,  x.trt = x.trt, x.out = x.out, 
 x.miss = x.miss, x.instrument = x.instrument, time.list = time.list, nsplits = 2)
 
-naive_estimator = binary_survival_ranger_naive_colo(dat = dat_2,  x.trt = x.trt.naive, x.out = x.out.naive, 
+ranger.naive_estimator = binary_survival_ranger_naive_colo(dat = dat_2,  x.trt = x.trt.naive, x.out = x.out.naive, 
 x.miss = x.miss.naive, x.instrument = NULL, time.list = time.list, nsplits = 2)
+
