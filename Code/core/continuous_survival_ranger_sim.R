@@ -1,3 +1,6 @@
+library(ranger)
+library(ks)
+
 continuous_survival_ipw = function(dat, kappa, x.trt, x.out, x.miss, x.instrument, 
   w.trt = NULL, w.out = NULL, w.miss = NULL, w.instrument = NULL, time.list, nsplits, misspecify = NULL){
   ## x.trt : covariates for estimating the treatment assignment;
@@ -56,31 +59,58 @@ continuous_survival_ipw = function(dat, kappa, x.trt, x.out, x.miss, x.instrumen
       pi_Z_minus = ifelse(pi_Z_minus < 0.01, 0.01, ifelse(pi_Z_minus > 0.99, 0.99, pi_Z_minus))
     
 
+      ## instrumental variable estimation
       if("instrument" %in% misspecify){
-        instmod = ranger(Z ~ . , dat = cbind(w.instrument, Z = dat$Z)[slong!=split,],
-          probability = TRUE) # this takes long time
-         Zvalues = dat$Z[slong!=split]
-         Z_predict = predict(instmod, data = cbind(w.instrument))$predictions     
-       }else{
-           instmod = ranger(Z ~ . , dat = cbind(x.instrument, Z = dat$Z)[slong!=split,],
-          probability = TRUE) # this takes long time   
-          Zvalues = dat$Z[slong!=split]
-          Z_predict = predict(instmod, data = cbind(x.instrument))$predictions
-       }
+        halfdat= dat[slong!=split,]
+        ks.object = kde(data.frame(W.1 = halfdat$W.1,
+                                   W.2 = halfdat$W.2, 
+                                   Z = halfdat$Z),
+                        xmin = c(min(dat$W.1), min(dat$W.2), min(dat$Z)-kappa),
+                        xmax = c(max(dat$W.1), max(dat$W.2), max(dat$Z)+kappa))
+        
+        ks.object2 = kde(data.frame(W.1 = halfdat$W.1,
+                                    W.2 = halfdat$W.2),
+                         xmin = c(min(dat$W.1), min(dat$W.2)),
+                         xmax = c(max(dat$W.1), max(dat$W.2)))
+        
+        delta_Z = predict(ks.object, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2, 
+                                                    Z = halfdat$Z))/
+          predict(ks.object2, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2))
+        delta_Z_plus = predict(ks.object, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2, 
+                                                         Z = halfdat$Z + kappa))/
+          predict(ks.object2, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2))
+        delta_Z_minus = predict(ks.object, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2, 
+                                                          Z = halfdat$Z - kappa))/
+          predict(ks.object2, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2))
+        
+      }else{
+        halfdat= dat[slong!=split,]
+        ks.object = kde(data.frame(X.1 = halfdat$X.1,
+                                   X.2 = halfdat$X.2, 
+                                   Z = halfdat$Z),
+                        xmin = c(min(dat$X.1), min(dat$X.2), min(dat$Z)-kappa),
+                        xmax = c(max(dat$X.1), max(dat$X.2), max(dat$Z)+kappa))
+        
+        ks.object2 = kde(data.frame(X.1 = halfdat$X.1,
+                                    X.2 = halfdat$X.2),
+                         xmin = c(min(dat$X.1), min(dat$X.2)),
+                         xmax = c(max(dat$X.1), max(dat$X.2)))
+        
+        delta_Z = predict(ks.object, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2, 
+                                                    Z = halfdat$Z))/
+          predict(ks.object2, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2))
+        delta_Z_plus = predict(ks.object, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2, 
+                                                         Z = halfdat$Z + kappa))/
+          predict(ks.object2, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2))
+        delta_Z_minus = predict(ks.object, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2, 
+                                                          Z = halfdat$Z - kappa))/
+          predict(ks.object2, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2))
+      }
       
-
-        delta_Z = delta_Z_plus = delta_Z_minus = c()
-       for(i in 1:nrow(dat)){
-        tmp.smooth = density(Zvalues, weights = Z_predict[i,])
-        delta_Z[i] = tmp.smooth$y[which.min( abs(tmp.smooth$x - dat$Z[i]))]
-        delta_Z_plus[i] = tmp.smooth$y[which.min( abs(tmp.smooth$x - (dat$Z[i] + kappa) ))]
-        delta_Z_minus[i] = tmp.smooth$y[which.min( abs(tmp.smooth$x - (dat$Z[i] - kappa) ))]
-       }
-       
       delta_Z = ifelse(delta_Z < 0.01, 0.01, ifelse(delta_Z > 0.99, 0.99, delta_Z))
       delta_Z_plus = ifelse(delta_Z_plus < 0.01, 0.01, ifelse(delta_Z_plus > 0.99, 0.99, delta_Z_plus))
       delta_Z_minus = ifelse(delta_Z_minus < 0.01, 0.01, ifelse(delta_Z_minus > 0.99, 0.99, delta_Z_minus))
-
+      
       if("censoring" %in% misspecify){
 
         w.miss_Z_A1 = w.miss_Z_minus_A1 = w.miss_Z_plus_A1 = w.out 
@@ -375,33 +405,59 @@ continuous_survival_if = function(dat, kappa, x.trt, x.out, x.miss, x.instrument
       pi_Z_minus = ifelse(pi_Z_minus < 0.01, 0.01, ifelse(pi_Z_minus > 0.99, 0.99, pi_Z_minus))
     
 
+      ## instrumental variable estimation
       if("instrument" %in% misspecify){
-        instmod = ranger(Z ~ . , dat = cbind(w.instrument, Z = dat$Z)[slong!=split,],
-          probability = TRUE) # this takes long time
-         Zvalues = dat$Z[slong!=split]
-         Z_predict = predict(instmod, data = cbind(w.instrument))$predictions     
-       }else{
-           instmod = ranger(Z ~ . , dat = cbind(x.instrument, Z = dat$Z)[slong!=split,],
-          probability = TRUE) # this takes long time   
-          Zvalues = dat$Z[slong!=split]
-          Z_predict = predict(instmod, data = cbind(x.instrument))$predictions
-       }
+        halfdat= dat[slong!=split,]
+        ks.object = kde(data.frame(W.1 = halfdat$W.1,
+                                   W.2 = halfdat$W.2, 
+                                   Z = halfdat$Z),
+                        xmin = c(min(dat$W.1), min(dat$W.2), min(dat$Z)-kappa),
+                        xmax = c(max(dat$W.1), max(dat$W.2), max(dat$Z)+kappa))
+        
+        ks.object2 = kde(data.frame(W.1 = halfdat$W.1,
+                                    W.2 = halfdat$W.2),
+                         xmin = c(min(dat$W.1), min(dat$W.2)),
+                         xmax = c(max(dat$W.1), max(dat$W.2)))
+        
+        delta_Z = predict(ks.object, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2, 
+                                                    Z = halfdat$Z))/
+          predict(ks.object2, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2))
+        delta_Z_plus = predict(ks.object, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2, 
+                                                         Z = halfdat$Z + kappa))/
+          predict(ks.object2, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2))
+        delta_Z_minus = predict(ks.object, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2, 
+                                                          Z = halfdat$Z - kappa))/
+          predict(ks.object2, x = data.frame(W.1 = dat$W.1, W.2 = dat$W.2))
+        
+      }else{
+        halfdat= dat[slong!=split,]
+        ks.object = kde(data.frame(X.1 = halfdat$X.1,
+                                   X.2 = halfdat$X.2, 
+                                   Z = halfdat$Z),
+                        xmin = c(min(dat$X.1), min(dat$X.2), min(dat$Z)-kappa),
+                        xmax = c(max(dat$X.1), max(dat$X.2), max(dat$Z)+kappa))
+        
+        ks.object2 = kde(data.frame(X.1 = halfdat$X.1,
+                                    X.2 = halfdat$X.2),
+                         xmin = c(min(dat$X.1), min(dat$X.2)),
+                         xmax = c(max(dat$X.1), max(dat$X.2)))
+        
+        delta_Z = predict(ks.object, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2, 
+                                                    Z = halfdat$Z))/
+          predict(ks.object2, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2))
+        delta_Z_plus = predict(ks.object, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2, 
+                                                         Z = halfdat$Z + kappa))/
+          predict(ks.object2, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2))
+        delta_Z_minus = predict(ks.object, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2, 
+                                                          Z = halfdat$Z - kappa))/
+          predict(ks.object2, x = data.frame(X.1 = dat$X.1, X.2 = dat$X.2))
+      }
       
-
-        delta_Z = delta_Z_plus = delta_Z_minus = c()
-       for(i in 1:nrow(dat)){
-        tmp.smooth = density(Zvalues, weights = Z_predict[i,])
-        delta_Z[i] = tmp.smooth$y[which.min( abs(tmp.smooth$x - dat$Z[i]))]
-        delta_Z_plus[i] = tmp.smooth$y[which.min( abs(tmp.smooth$x - (dat$Z[i] + kappa) ))]
-        delta_Z_minus[i] = tmp.smooth$y[which.min( abs(tmp.smooth$x - (dat$Z[i] - kappa) ))]
-       }
-       
       delta_Z = ifelse(delta_Z < 0.01, 0.01, ifelse(delta_Z > 0.99, 0.99, delta_Z))
       delta_Z_plus = ifelse(delta_Z_plus < 0.01, 0.01, ifelse(delta_Z_plus > 0.99, 0.99, delta_Z_plus))
       delta_Z_minus = ifelse(delta_Z_minus < 0.01, 0.01, ifelse(delta_Z_minus > 0.99, 0.99, delta_Z_minus))
-
+      
       if("censoring" %in% misspecify){
-
 
           w.miss_Z_A1 = w.miss_Z_minus_A1 = w.miss_Z_plus_A1 = w.out 
           w.miss_Z_A0 = w.miss_Z_minus_A0 = w.miss_Z_plus_A0 = w.out 

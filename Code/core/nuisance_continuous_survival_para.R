@@ -41,10 +41,9 @@ delta_fun = function(Z, subdat, dat){
 
 
 delta_fun_continuous = function(Z, subdat, dat){
-    fit = lm(Z ~ X.1 + X.2 + X.3 + X.4 + X.5, data = subdat)
+    fit = lm(Z ~ X.1 + X.2, data = subdat)
     foo = predict.lm(fit, data.frame(X.1 = dat$X.1, 
-                                 X.2 = dat$X.2, X.3 = dat$X.3, X.4 = dat$X.4, 
-                                 X.5 = dat$X.5), se.fit = TRUE)
+                                 X.2 = dat$X.2), se.fit = TRUE)
     delta.Z = dnorm(Z, foo$fit, sd(subdat$Z))
     return(delta.Z)
   }
@@ -94,10 +93,9 @@ delta_fun_wrong = function(Z, subdat, dat){
 
 
 delta_fun_continuous_wrong = function(Z, subdat, dat){
-    fit = lm(Z ~ W.1 + W.2 + W.3 + W.4 + W.5, data = subdat)
+    fit = lm(Z ~ W.1 + W.2, data = subdat)
     foo = predict.lm(fit, data.frame(W.1 = dat$W.1, 
-                                 W.2 = dat$W.2, W.3 = dat$W.3, W.4 = dat$W.4, 
-                                 W.5 = dat$W.5), se.fit = TRUE)
+                                 W.2 = dat$W.2), se.fit = TRUE)
     delta.Z = dnorm(Z, foo$fit, sd(subdat$Z))
     return(delta.Z)
 }

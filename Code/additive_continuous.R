@@ -2,6 +2,7 @@ library(MASS)
 library(ranger)
 library(survival)
 library(ahaz)
+library(ks)
 
 source("Code/core/nuisance_continuous_survival_para.R")
 source("Code/core/continuous_survival_para_sim.R")
@@ -11,16 +12,18 @@ source("Code/core/continuous_survival_ranger_sim.R")
 N=1000
 kappa = 2
 X = mvrnorm(N, rep(0,5), Sigma = diag(5))
-deltas = c(-0.5, -0.5, 1, -1, -0.7)
+deltas = c(-1.0, -1.0, 0, 0, 0)
 alphas = c(0.1, 0.1, -0.2, -0.2, 0.3)*5
-Z = rnorm(N, as.numeric(X %*% deltas), 2) 
+Z = rnorm(N, as.numeric(X %*% deltas), 2) # define as a function of X
 U = rnorm(N, 0, 1)
 A = rbinom(N, 1, plogis(as.numeric(X %*% alphas) + 2*Z + 0.3*U + 0.1)) ## U : unmeasured confounder
 
 
+## generate survival outcome under Cox model + Censoring
+## covariate: X + A + U
 betas = c(0.5, 0.5, -0.5, -0.5, -0.5)/50
 AtoT = 1.5/50
-UtoT = 0.5/50
+UtoT = -1.0/50
 gammas = c(-0.3, -0.3, 0.3, 0.3, 0.3)
 ZtoC = 0.5
 AtoC = -0.5
