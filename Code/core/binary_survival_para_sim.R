@@ -8,7 +8,7 @@ binary_survival_para_if = function(dat, time.list, misspecify = NULL, survival =
   n = nrow(dat)
   k = length(time.list) # for treatment density
   ifvals = matrix(nrow = n, ncol = k)
-  est.eff = rep(NA, k)
+  est.eff = est.var = rep(NA, k)
   subdat = dat
 
   # fit treatment model
@@ -137,13 +137,12 @@ binary_survival_para_if = function(dat, time.list, misspecify = NULL, survival =
       ## influence-function based estimator:
       ifvals[, j] = mean(phi1_1 - phi1_0, na.rm = TRUE) / 
                   mean(phi2_1 - phi2_0, na.rm = TRUE) 
+      est.eff[j] = mean(ifvals[,j]) # for each delta vaule            
+      est.var[j] = var( (phi1_1 - phi1_0 - est.eff[j]*(phi2_1-phi2_0))/ mean(phi2_1 - phi2_0) ) / length(phi1_1)  
     }
 
-    for(j in 1:k){
-      est.eff[j] = mean(ifvals[,j]) # for each delta vaule
-    }
-
-    return(list(est = est.eff))
+  
+    return(list(est.eff = est.eff, est.var = est.var))
 }
 
 
@@ -342,7 +341,7 @@ binary_survival_para_if_hazard = function(dat, time.list,  misspecify = NULL, su
   n = nrow(dat)
   k = length(time.list) # for treatment density
   ifvals = matrix(nrow = n, ncol = k)
-  est.eff = rep(NA, k)
+  est.eff = est.var = rep(NA, k)
   subdat = dat
 
   # fit a treatment model
@@ -558,13 +557,13 @@ binary_survival_para_if_hazard = function(dat, time.list,  misspecify = NULL, su
 
       ifvals[, j] = mean( (D_Z1_A1[j,] + D_Z1_A0[j, ]) - (D_Z0_A1[j,] + D_Z0_A0[j,]), na.rm = TRUE) / 
                     mean(phi2_1 - phi2_0, na.rm = TRUE) 
+      est.eff[j] = mean(ifvals[,j]) # for each delta vaule              
+      est.var[j] = var( ((D_Z1_A1[j,] + D_Z1_A0[j, ]) - (D_Z0_A1[j,] + D_Z0_A0[j,]) - est.eff[j]*(phi2_1-phi2_0))/ mean(phi2_1 - phi2_0) ) / length(phi2_1)
     }
 
-    for(j in 1:k){
-      est.eff[j] = mean(ifvals[,j]) # for each delta vaule
-    }
 
-   return(list(est = est.eff))
+
+   return(list(est.eff = est.eff, est.var = est.var))
 }
 
 
@@ -573,7 +572,7 @@ binary_survival_para_naive = function(dat, time.list, misspecify = NULL, surviva
   n = nrow(dat)
   k = length(time.list) 
   ifvals = matrix(nrow = n, ncol = k)
-  est.eff = rep(NA, k)
+  est.eff = est.var = rep(NA, k)
 
   subdat = dat
   # fit a treatment model
@@ -720,13 +719,10 @@ binary_survival_para_naive = function(dat, time.list, misspecify = NULL, surviva
         D_A0[j,] = D_A0[j,]+ S_tau_A0[j,]
   
       ifvals[, j] = mean(D_A1[j,] - D_A0[j,], na.rm = TRUE) 
+      est.eff[j] = mean(ifvals[,j]) # for each delta vaule              
+      est.var[j] = var(D_A1[j,] - D_A0[j,]) / nrow(dat)
    }
     
-    for(j in 1:k){
-      est.eff[j] = mean(ifvals[,j]) # for each delta vaule
-    }
 
-  return(list(est = est.eff))
+  return(list(est.eff = est.eff, est.var = est.var))
 }
-
-
