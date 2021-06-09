@@ -87,7 +87,7 @@ dat = data.frame(obs.T = obs.T, obs.C = obs.C, obs.Y = obs.Y, A = A, X = X, U = 
 dat$R = as.integer(dat$obs.T < dat$obs.C)
 
 ### parametric estimator
-## (1) IF estimator
+## (1) IF estimator under (A4*)
 result.if = binary_survival_para_if(dat = dat, time.list = time.list, survival = "Cox")
 
 result.if_omega_delta = binary_survival_para_if(dat = dat, 
@@ -99,35 +99,35 @@ result.if_pi_mu = binary_survival_para_if(dat = dat, time.list = time.list,
 result.if_pi_omega = binary_survival_para_if(dat = dat, time.list = time.list,
                             misspecify = c("treatment", "censoring"), survival = "Cox")
 
-## (2) IF-hazard estimator
+## (2) IF estimator under (A4)
 result.if_hazard = binary_survival_para_if_hazard(dat = dat, 
-                            time.list = time.list, survival = "Cox")
+                            time.list = time.list, survival = "Cox", censor = "Cox")
 
 result.if_hazard_omega_delta = binary_survival_para_if_hazard(dat = dat, 
                             time.list = time.list, misspecify = c("censoring", "instrument"),
-                            survival = "Cox")
+                            survival = "Cox", censor = "Cox")
 
 result.if_hazard_pi_mu = binary_survival_para_if_hazard(dat = dat, 
                             time.list = time.list, misspecify = c("hazard", "treatment"),
-                            survival = "Cox")
+                            survival = "Cox", censor = "Cox")
 
 result.if_hazard_pi_omega = binary_survival_para_if_hazard(dat = dat,
                             time.list = time.list, misspecify = c("treatment", "censoring"),
-                            survival = "Cox")
+                            survival = "Cox", censor = "Cox")
 
-## (3) naive-hazard estimator
+## (3) Naive estimator under (A4)
 naive.if =  binary_survival_para_naive(dat = dat, 
-                            time.list = time.list, survival = "Cox")
+                            time.list = time.list, survival = "Cox", censor = "Cox")
 
 naive.if_omega_delta = binary_survival_para_naive(dat = dat, 
                             time.list = time.list, misspecify = c("censoring", "instrument"),
-                            survival = "Cox")
+                            survival = "Cox", censor = "Cox")
 
 naive.if_pi_mu = binary_survival_para_naive(dat = dat, 
-                            time.list = time.list, misspecify = c("hazard", "treatment"),  survival = "Cox")
+                            time.list = time.list, misspecify = c("hazard", "treatment"),  survival = "Cox", censor = "Cox")
 
 naive.if_pi_omega = binary_survival_para_naive(dat = dat, 
-                            time.list = time.list, misspecify = c("treatment", "censoring"),  survival = "Cox")
+                            time.list = time.list, misspecify = c("treatment", "censoring"),  survival = "Cox", censor = "Cox")
 
 
 
@@ -164,7 +164,7 @@ w.out.naive = data.frame(W1 = dat$W.1, W2 = dat$W.2, W3 = dat$W.3,
 w.miss.naive = data.frame(W1 = dat$W.1, W2 = dat$W.2, W3 = dat$W.3, 
                     W4 = dat$W.4, W5 = dat$W.5, A = dat$A)
 
-## (1) IF estimator
+## (1) IF estimator under (A4*)
 ranger.result.if = binary_survival_ranger_if(dat = dat, x.trt = x.trt, x.out = x.out, 
 	x.miss = x.miss, x.instrument = x.instrument, time.list = time.list, nsplits = nsplits)
 
@@ -186,7 +186,7 @@ ranger.result.if_pi_omega = binary_survival_ranger_if(dat = dat, x.trt = x.trt, 
 	w.miss = w.miss, w.instrument = w.instrument, time.list = time.list, nsplits = nsplits,
                             misspecify = c("treatment", "censoring"))
 
-## (2) IF-hazard estimator
+## (2) IF estimator under (A4)
 ranger.result.if_hazard = binary_survival_ranger_if_hazard(dat = dat, x.trt = x.trt, x.out = x.out, 
 	x.miss = x.miss, x.instrument = x.instrument, 
 	w.trt = w.trt, w.out = w.out, 
@@ -211,7 +211,7 @@ ranger.result.if_hazard_pi_omega = binary_survival_ranger_if_hazard(dat = dat, x
 	w.miss = w.miss, w.instrument = w.instrument, nsplits = nsplits,
                             time.list = time.list, misspecify = c("treatment", "censoring"))
 
-## (3) naive-hazard estimator
+## (3) Naive estimator under (A4)
 ranger.naive.if =  binary_survival_ranger_naive(dat = dat, x.trt = x.trt.naive, x.out = x.out.naive, 
 	x.miss = x.miss.naive, x.instrument = NULL, 
 	w.trt = w.trt.naive, w.out = w.out.naive, 

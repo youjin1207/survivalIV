@@ -31,15 +31,15 @@ We uploaded the sample data ``Data/sample.csv`` that has the same data structure
 
 ## Implementation functions
 
-- Code/cox_binary.R : simulation for comparing three estimators (IF, IPW, Plug-in) under non-ignorable censoring with survival times generated from a Cox proportional hazard model.
+- Code/cox_binary.R : simulation for comparing three estimators (IF, IPW, Plug-in) under the covariate-dependent censoring  with survival times generated from a Cox proportional hazard model.
 
-- Code/cox_additive.R : simulation for comparing three estimators (IF, IPW, Plug-in) under non-ignorable censoring with survival times generated from an additive hazards model.
+- Code/cox_additive.R : simulation for comparing three estimators (IF, IPW, Plug-in) under the covariate-dependent censoring with survival times generated from an additive hazards model.
 
-- Code/scenario1.R : simulation for comparing three influence function-based estimators under scenario 1 (no unmeasured confounding and non-ignorable censoring)
+- Code/scenario1.R : simulation for comparing three influence function-based estimators under scenario 1 (no unmeasured confounding and outcome-dependent censoring)
 
-- Code/scenario2.R : simulation for comparing three influence function-based estimators under scenario 2 (unmeasured confounding and ignorable censoring)
+- Code/scenario2.R : simulation for comparing three influence function-based estimators under scenario 2 (unmeasured confounding and random censoring)
 
-- Code/scenario3.R : simulation for comparing three influence function-based estimators under scenario 3 (no unmeasured confounding and ignorable censoring)
+- Code/scenario3.R : simulation for comparing three influence function-based estimators under scenario 3 (no unmeasured confounding and administrative censoring)
 
 - Code/realanalysis.R : code for real data analysis both using parametric and nonparametric estimation.
 
@@ -47,7 +47,7 @@ We uploaded the sample data ``Data/sample.csv`` that has the same data structure
 
 ## Instructions for general use
 
-For parametric estimation, replace the covariates set in a regression function with an user-specific covariates. For example, in ``mu_fun`` for a regression function in Code/core/binary_survival_para_colo.R, you can replace the covariates with your own covariates X1, X2, and X3.
+For parametric estimation, replace the covariates set in a regression function with user-specific covariates. For example, in ``mu_fun`` for a regression function in Code/core/binary_survival_para_colo.R, you can replace the covariates with your own covariates X1, X2, and X3.
 
 ```
 ## PLCO data

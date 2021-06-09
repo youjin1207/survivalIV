@@ -32,13 +32,12 @@ Lambda.conti.censor = (coeff.Lambda[1]/2) + (coeff.Lambda[2]/4)*t + 2*coeff.Lamb
 t = c(1:180); t2 = t^2
 tau = 180
 coeff.Lambda = c(0.00, 0.0005, 0.0003)
-Lambda.conti = coeff.Lambda[1] + coeff.Lambda[2]*t + coeff.Lambda[3]*t2 
-## cumulative hazards for T and C ##
-print.Lambda = function(time){
-coeff.Lambda[1] + coeff.Lambda[2]*time + coeff.Lambda[3]*(time)^2
-}
 inverse.Lambda = function(input){
 (1/(coeff.Lambda[3]))*(-coeff.Lambda[2]/2 +  sqrt(coeff.Lambda[3]*input + coeff.Lambda[2]^2/4 -coeff.Lambda[1]*coeff.Lambda[3]))
+}
+coeff.Lambda2 = c(0.00, 0.0003, 0.0001)
+inverse.Lambda2 = function(input){
+  (1/(coeff.Lambda2[3]))*(-coeff.Lambda2[2]/2 +  sqrt(coeff.Lambda2[3]*input + coeff.Lambda2[2]^2/4 -coeff.Lambda2[1]*coeff.Lambda2[3]))
 }
 
 
@@ -48,8 +47,20 @@ obs.T = inverse.Lambda((-log(U.cf)*exp(-as.numeric(as.numeric(X %*% betas) + A*A
 obs.T1 = inverse.Lambda((-log(U.cf)*exp(-as.numeric(as.numeric(X %*% betas) + 1*AtoT + U*UtoT))))
 obs.T0 = inverse.Lambda((-log(U.cf)*exp(-as.numeric(as.numeric(X %*% betas) + 0*AtoT + U*UtoT))))
 
-dat = data.frame(obs.Y = obs.T, A = A, X = X, U = U, Z = Z)
-dat$Delta = rbinom(N, 1, plogis(as.numeric(X %*% gammas) + Z*ZtoC + A*AtoC))
+U.censor = runif(N, 0, 1)
+obs.C = inverse.Lambda2((-log(U.censor)*exp(-as.numeric(as.numeric(X %*% gammas) + A*AtoC))))
+
+obs.Y = pmin(obs.T, obs.C)
+
+time.list = seq(0, 30, 1)
+R = as.integer(obs.T < obs.C)
+obs.Y = pmin(obs.T, obs.C)
+obs.T = as.integer(obs.T)
+obs.C = as.integer(obs.C)
+obs.Y = as.integer(obs.Y)
+obs.T1= as.integer(obs.T1)
+obs.T0 = as.integer(obs.T0)
+
 
 surv1.obs = surv0.obs = c()
 for(r in 1:length(time.list)){
@@ -64,17 +75,15 @@ W[,2] = X[,2] / (1+exp(X[,1])) + 10
 W[,3] = (X[,1]*X[,3]/25 + 0.6 )^3
 W[,4] = (X[,2] + X[,4] + 20)^2
 
-dat = data.frame(obs.Y = obs.T, A = A, X = X, U = U, Z = Z, W = W)
-dat$R = rbinom(N, 1, plogis(as.numeric(X %*% gammas) + Z*ZtoC + A*AtoC + 2))
-
+dat = data.frame(obs.Y = obs.Y, obs.T = obs.T, obs.C = obs.C, R = R, R.censor = 1-R, A = A, X = X, U = U, Z = Z, W = W)
 
 
 ### parametric estimation
-result.if = binary_survival_para_if(dat = dat, time.list = time.list, misspecify = NULL, survival = "Cox")
+result.if = binary_survival_para_if_hazard(dat = dat, time.list = time.list, misspecify = NULL, survival = "Cox")
 
-result.ipw = binary_survival_para_ipw(dat = dat, time.list = time.list, misspecify = NULL, survival = "Cox")
+result.ipw = binary_survival_para_ipw_hazard(dat = dat, time.list = time.list, misspecify = NULL, censor = "Cox")
 
-result.plugin = binary_survival_para_plugin(dat = dat, time.list = time.list, misspecify = NULL, survival = "Cox")
+result.plugin = binary_survival_para_plugin_hazard(dat = dat, time.list = time.list, misspecify = NULL, survival = "Cox")
 
 
 ### nonparametric estimation
@@ -96,14 +105,14 @@ w.miss = data.frame(W1 = dat$W.1, W2 = dat$W.2, W3 = dat$W.3,
 w.instrument = data.frame(W1 = dat$W.1, W2 = dat$W.2, W3 = dat$W.3, 
                   W4 = dat$W.4, W5 = dat$W.5)
 
-ranger.result.if = binary_survival_ranger_if(dat = dat, x.trt = x.trt, x.out = x.out,
+ranger.result.if = binary_survival_ranger_if_hazard(dat = dat, x.trt = x.trt, x.out = x.out,
                     x.miss = x.miss, x.instrument = x.instrument, 
 					w.trt = w.trt, w.out = w.out,
                     w.miss = w.miss, w.instrument = w.instrument, 
                     time.list = time.list,
                     nsplits = 2, misspecify = NULL)
 
-ranger.result.ipw = binary_survival_ranger_ipw(dat = dat, x.trt = x.trt, x.out = x.out,
+ranger.result.ipw = binary_survival_ranger_hazard_ipw(dat = dat, x.trt = x.trt, x.out = x.out,
                     x.miss = x.miss, x.instrument = x.instrument, 
 					w.trt = w.trt, w.out = w.out,
                     w.miss = w.miss, w.instrument = w.instrument, 
@@ -111,7 +120,7 @@ ranger.result.ipw = binary_survival_ranger_ipw(dat = dat, x.trt = x.trt, x.out =
                     nsplits = 2, misspecify = NULL)
 
 
-ranger.result.plugin = binary_survival_ranger_plugin(dat = dat, x.trt = x.trt, x.out = x.out,
+ranger.result.plugin = binary_survival_ranger_hazard_plugin(dat = dat, x.trt = x.trt, x.out = x.out,
                     x.miss = x.miss, x.instrument = x.instrument, 
 					w.trt = w.trt, w.out = w.out,
                     w.miss = w.miss, w.instrument = w.instrument, 
